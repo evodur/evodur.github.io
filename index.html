@@ -32,6 +32,7 @@ h2{font:600 24px/1.3 "Source Serif 4",Georgia,serif;margin:56px 0 14px}
 figure{margin:0}
 figure img{width:100%;height:auto;display:block;border-radius:10px;background:#fff;border:1px solid var(--line)}
 figcaption{color:var(--muted);font-size:14px;margin-top:10px}
+.tnote{color:var(--muted);font-size:14px;margin:28px 0 10px}
 .why{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:8px 0 18px}
 .card{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--accent2);border-radius:10px;padding:16px 18px}
 .card .k{font:600 18px/1.3 "Source Serif 4",Georgia,serif;margin-bottom:8px}
@@ -75,47 +76,47 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:60px}
 
 <figure>
   <img src="assets/teaser.png" alt="The predicted duration of one incident narrowing as the call, police arrival, the clearance method and elapsed time arrive">
-  <figcaption>(a) The forecast for one incident as the response unfolds: the 80% band and the predictive densities sharpen with each piece of evidence, and durations shorter than the elapsed time are ruled out. (b) Each forecast is the call-time prior multiplied by one likelihood per piece of evidence, so no model is refitted.</figcaption>
+  <figcaption>(a) The forecast for one incident as the response unfolds: the 80% band and the predictive densities sharpen with each piece of evidence (police arrival, the clearance method, elapsed time), and durations shorter than the elapsed time are ruled out. (b) Each forecast is the call-time prior multiplied by one likelihood per piece of evidence, so no model is refitted.</figcaption>
 </figure>
 
-<div class="tldr"><b>In short.</b> A traffic management centre needs a duration estimate when an incident is reported and a sharper one as the police arrive, the clearance method is recorded and time passes. EvoDur keeps one call-time model and adds each new piece of evidence through Bayes' rule, so one model serves every information state.</div>
+<div class="tldr"><b>In short.</b> A traffic management centre needs a duration estimate when an incident is reported, and a sharper one as the police arrive, the incident is labelled and time passes. The <i>label</i> is the category the response records for the incident: in Beijing, who cleared it (the parties or the police) and whether congestion formed; in the other datasets, its severity or the police disposition. EvoDur keeps one call-time model and adds each new piece of evidence through Bayes' rule, so one model serves every <i>information state</i>, that is, every combination of what is known at a given moment.</div>
 
 <h2>Why EvoDur</h2>
 <div class="why">
   <div class="card"><div class="k">One model, every moment</div>
   <p>Earlier work trains a new model for each stage of the response. EvoDur trains one call-time prior and one small module per type of evidence, and Bayes' rule gives the forecast for any combination of evidence. Nothing is refitted when information arrives, and an update takes about 2&nbsp;ms on one CPU core.</p></div>
   <div class="card"><div class="k">Better the more you know</div>
-  <p>EvoDur has the best log score at the call on all five datasets, and its lead over every other model grows as evidence comes in, reaching 0.51 nats per incident (a 66% higher predictive density at the true duration) for incidents still open after two hours.</p></div>
+  <p>The log score is the log of the predicted density at the true duration, so higher is better. EvoDur has the best log score at the call on all five datasets, and its lead over every other model grows as evidence comes in, reaching 0.51 nats per incident (a 66% higher predictive density at the true duration) for incidents still open after two hours.</p></div>
   <div class="card"><div class="k">Ahead of stage-wise models</div>
-  <p>Once the police have arrived, the single EvoDur model beats the stage-wise linear and gradient-boosting models of earlier work by 0.04 to 0.22 nats per incident in every fold, and it matches or beats a neural network trained separately for that state.</p></div>
+  <p>Once the police have arrived, the single EvoDur model beats the stage-wise linear and gradient-boosting models of earlier work by 0.04 to 0.22 nats per incident in every fold, and it matches or beats a neural network trained separately for that information state.</p></div>
 </div>
 
 <div class="grid">
-  <div class="stat"><b>34 / 35</b><span>folds where EvoDur has the best log score once the label is known</span></div>
+  <div class="stat"><b>34 / 35</b><span>cross-validation folds, over the five datasets, where EvoDur has the best log score once the label is known</span></div>
   <div class="stat"><b>0.04–0.22</b><span>nats per incident gained over the stage-wise models of earlier work after police arrival</span></div>
-  <div class="stat"><b>10–27%</b><span>lower absolute error of the median with arrival time and label, with no model refitted</span></div>
+  <div class="stat"><b>10–27%</b><span>lower absolute error of the median forecast once arrival time and label are known, compared with the forecast at the call</span></div>
 </div>
 
 <h2>Abstract</h2>
 <p>A traffic management centre needs to know how long an incident will last as soon as it is reported, and it needs a sharper answer as the response unfolds. Current practice either fits a new model for every stage of the response or treats the clearance method as a cause that must be predicted at the call. We turn the classical competing-risk model around, modelling the duration first and the categorical label recorded during the response second, with neural networks for both parts. The resulting model, EvoDur, consists of a call-time prior and one small likelihood module per type of later evidence, such as the police arrival time, the label or the fact that the incident is still open, and Bayes' rule combines whatever evidence is available without refitting anything. The call-time forecast does not depend on the label model, and conditioning on elapsed time is at least as efficient as refitting. On five datasets from Beijing, the New York region, Montgomery County and Austin, EvoDur has the best log score of ten models at the call and once the label is known (34 of 35 folds), and its lead widens as evidence accumulates.</p>
 
 <h2>Method</h2>
-<p>The joint distribution of the duration \(T\) and the recorded label \(C\) can be written in two orders. Earlier competing-risk models put the label first,</p>
+<p>Let \(\boldsymbol{x}\) be the features known at the call (time, location, incident type and, where recorded, vehicles and weather), \(T\) the duration and \(C\) the label recorded during the response. Their joint distribution can be written in two orders. Earlier competing-risk models put the label first,</p>
 <div class="eq">\[ p(c, t \mid \boldsymbol{x}) = P(c \mid \boldsymbol{x})\, f(t \mid c, \boldsymbol{x}), \]</div>
 <p>so the call-time forecast is a mixture over labels that are not yet known. EvoDur uses the other order,</p>
 <div class="eq">\[ p(c, t \mid \boldsymbol{x}) = f(t \mid \boldsymbol{x})\, P(c \mid t, \boldsymbol{x}). \]</div>
-<p>The label then becomes evidence about the duration, and any later information with a likelihood given the duration enters the same way:</p>
+<p>The label then becomes evidence about the duration, and any later piece of evidence \(e_j\) with a likelihood given the duration enters the same way:</p>
 <div class="eq">\[ f(t \mid \boldsymbol{x}, e_1, \dots, e_m) \;\propto\; f(t \mid \boldsymbol{x}) \prod_{j=1}^{m} p(e_j \mid t, \boldsymbol{x}). \]</div>
-<p>The prior is a neural mixture of log-logistic AFT components. The evidence modules are a classifier for the label, a mixture density for the police response time \(r < t\), and the indicator \(\mathbb{1}\{t > s\}\) for an incident still open at time \(s\). Each part is fitted once, and any subset of evidence is combined at prediction time.</p>
+<p>The prior \(f(t \mid \boldsymbol{x})\) is a neural network that outputs a mixture of log-logistic accelerated failure time (AFT) distributions. The evidence modules are a classifier for the label, a mixture density for the police arrival time \(r < t\) (minutes after the call), and the indicator \(\mathbb{1}\{t > s\}\) for an incident still open at time \(s\). Each part is fitted once, and any subset of evidence is combined at prediction time.</p>
 
 <h2>Results</h2>
-<p><b>The lead grows with the evidence.</b> At the call EvoDur and the strongest baseline are close, since both see only the call-time features. Each new piece of evidence widens the gap.</p>
+<p><b>The lead grows with the evidence.</b> At the call EvoDur and the strongest baseline are close, since both see only the call-time features \(\boldsymbol{x}\). Each new piece of evidence widens the gap.</p>
 <figure>
   <img src="assets/gain.png" alt="EvoDur's margin over the best other model rising from the call to incidents still open after two hours" style="max-width:520px;margin:0 auto">
-  <figcaption>EvoDur's lead over the best other model in each information state. The lead grows as evidence accumulates, up to 0.51 nats per incident for incidents still open after two hours.</figcaption>
+  <figcaption>EvoDur's lead in log score over the best baseline in each information state (call, label known, still open after 30, 60 and 120 minutes). After the call, only baselines that can use the label are compared. The lead grows as evidence accumulates, up to 0.51 nats per incident for incidents still open after two hours.</figcaption>
 </figure>
 
-<p style="margin-top:28px">Log score per incident (held-out log-likelihood, higher is better), single networks, mean over folds.</p>
+<p class="tnote">Log score per incident on held-out data (nats, higher is better), mean over cross-validation folds. &ldquo;Best other&rdquo; at the call is the best of the nine baselines: linear and neural competing-risk mixtures, DeepHit, Neural Fine-Gray, a linear AFT model, a Weibull mixture density network, XGBoost-AFT, a random survival forest and DeepSurv (the last two give no density). Once the label is known it is the best of the four baselines that can use the label.</p>
 <div class="tablewrap">
 <table>
 <thead><tr><th>Dataset</th><th>Incidents</th><th>EvoDur, call</th><th>Best other, call</th><th>EvoDur, label known</th><th>Best other, label known</th></tr></thead>
@@ -131,7 +132,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:60px}
 
 <figure style="margin-top:32px">
   <img src="assets/cases.png" alt="Forecasts for three held-out Beijing incidents before and after police arrival">
-  <figcaption>Forecasts for three held-out incidents of the Beijing 4th Ring data, chosen by a fixed rule (10th, 50th and 90th percentile of the gain). Blue is the forecast at the call, green after police arrival and the label.</figcaption>
+  <figcaption>Forecasts for three held-out incidents of the Beijing 4th Ring data, chosen by a fixed rule (10th, 50th and 90th percentile of the gain in log score from the evidence). Blue is the forecast at the call, green after police arrival and the label. Each panel names the incident's label (&ldquo;self&rdquo;: cleared by the parties themselves).</figcaption>
 </figure>
 
 <h2 id="data">Data</h2>
