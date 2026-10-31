@@ -6,7 +6,7 @@
 <title>EvoDur</title>
 <meta name="description" content="One model for every stage of the response: Bayesian updating of traffic incident duration forecasts.">
 <meta property="og:title" content="EvoDur: One model for every stage of the response">
-<meta property="og:image" content="https://evodur.github.io/assets/teaser.png">
+<meta property="og:image" content="https://evodur.github.io/assets/teaser_2026b.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
@@ -47,7 +47,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:48px}
   <a href="#bibtex">BibTeX</a>
 </div>
 
-<img src="assets/teaser.png" alt="The forecast for one incident as the police arrive, the label is recorded and time passes">
+<img src="assets/teaser_2026b.png" alt="The forecast for one incident as the police arrive, the label is recorded and time passes">
 <p class="cap">The forecast for one incident is updated as the police arrive, the officer reports how the incident is handled (the label), and the incident stays open. Each update multiplies the forecast at the call by one factor per piece of information.</p>
 
 <h2>Abstract</h2>
@@ -57,14 +57,14 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:48px}
 <p>EvoDur forecasts the duration \(T\) at the call from what the operator knows, \(\boldsymbol{x}\). Every later piece of information \(e_j\) &ndash; the police arrival time, the label, or the fact that the incident is still open &ndash; has its own model of how likely it is for each duration, and the forecast is updated by Bayes' rule:</p>
 <div class="eq">\[ f(t \mid \boldsymbol{x}, e_1, \dots, e_m) \;\propto\; f(t \mid \boldsymbol{x}) \prod_{j} p(e_j \mid t, \boldsymbol{x}). \]</div>
 <p>Each part is fitted once on all incidents, so any combination of information can be used without refitting. Long incidents are more likely to end with a larger response, so the label is informative about the duration:</p>
-<img src="assets/label_curves.png" alt="Probability of each label class given the duration in six datasets">
+<img src="assets/label_curves_2026b.png" alt="Probability of each label class given the duration in six datasets">
 <p class="cap">Probability of each label class given the duration, from EvoDur's label module on held-out incidents.</p>
 
 <h2>Results</h2>
-<img src="assets/summary.png" alt="EvoDur compared with its strongest competitor in three information states">
+<img src="assets/summary_2026b.png" alt="EvoDur compared with its strongest competitor in three information states">
 <p class="cap">Log score of EvoDur minus that of its strongest competitor, with 95% confidence intervals over folds. (a) At the call. (b) With the label known. (c) After police arrival, against models refitted for that stage.</p>
 
-<img src="assets/value.png" alt="Economic value of acting on EvoDur's probability of a major incident" style="max-width:720px;margin:36px auto 0">
+<img src="assets/value_2026b.png" alt="Economic value of acting on EvoDur's probability of a major incident" style="max-width:720px;margin:36px auto 0">
 <p class="cap">Value of acting on EvoDur's probability that an incident lasts more than 2 h, at the call, after police arrival and after the label, in Seattle and San Francisco.</p>
 
 <h2 id="bibtex">BibTeX</h2>
