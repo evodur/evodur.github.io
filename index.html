@@ -3,157 +3,71 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EvoDur: Bayesian updating of incident duration forecasts</title>
-<meta name="description" content="EvoDur: one model for every stage of the response. Traffic incident duration forecasts updated by Bayes' rule as the police arrive, the label is recorded and time passes.">
+<title>EvoDur</title>
+<meta name="description" content="One model for every stage of the response: Bayesian updating of traffic incident duration forecasts.">
 <meta property="og:title" content="EvoDur: One model for every stage of the response">
-<meta property="og:image" content="assets/teaser.png">
+<meta property="og:image" content="https://evodur.github.io/assets/teaser.png">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
   onload="renderMathInElement(document.body,{delimiters:[{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}]})"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600&family=Noto+Serif:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#fbfaf7;--fg:#1d1d1f;--muted:#5f5f66;--line:#e4e2dc;--card:#ffffff;--accent:#2a78d6;--accent2:#1baf7a}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141518;--fg:#ececec;--muted:#a3a3ab;--line:#2b2d33;--card:#1c1d21;--accent:#6aa7ee;--accent2:#4cc79a}}
-:root[data-theme="dark"]{--bg:#141518;--fg:#ececec;--muted:#a3a3ab;--line:#2b2d33;--card:#1c1d21;--accent:#6aa7ee;--accent2:#4cc79a}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 Inter,system-ui,sans-serif}
-main{max-width:920px;margin:0 auto;padding:56px 20px 80px}
-h1{font:600 clamp(28px,4.4vw,42px)/1.18 "Source Serif 4",Georgia,serif;margin:0 0 14px;letter-spacing:-.01em;text-align:center}
-h1 .name{color:var(--accent)}
-.sub{text-align:center;font:400 clamp(18px,2.6vw,23px)/1.35 "Source Serif 4",Georgia,serif;color:var(--muted);margin:0 0 18px}
-h2{font:600 24px/1.3 "Source Serif 4",Georgia,serif;margin:56px 0 14px}
-.authors{text-align:center;font-size:17px;margin:6px 0 2px}
-.affil{text-align:center;color:var(--muted);font-size:14px}
-.venue{text-align:center;color:var(--muted);font-size:14px;margin-top:6px}
-.links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:24px 0 30px}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;background:var(--fg);color:var(--bg);text-decoration:none;font-weight:500;font-size:15px}
-.btn.off{opacity:.45;pointer-events:none}
-figure{margin:0}
-figure img{width:100%;height:auto;display:block;border-radius:10px;background:#fff;border:1px solid var(--line)}
-figcaption{color:var(--muted);font-size:14px;margin-top:10px}
-.tnote{color:var(--muted);font-size:14px;margin:28px 0 10px}
-.why{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:8px 0 18px}
-.card{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--accent2);border-radius:10px;padding:16px 18px}
-.card .k{font:600 18px/1.3 "Source Serif 4",Georgia,serif;margin-bottom:8px}
-.card p{font-size:15px;margin:0;color:var(--fg)}
-@media (max-width:760px){.why{grid-template-columns:1fr}}
-.eq{overflow-x:auto;margin:6px 0 16px;font-size:17px}
-.katex{color:var(--fg)}
-@media (max-width:600px){.eq{font-size:13px}}
-.tldr{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:16px 20px;margin:28px 0}
-p{margin:0 0 14px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
-.stat b{display:block;font:600 26px/1.2 "Source Serif 4",Georgia,serif;color:var(--accent)}
-.stat span{color:var(--muted);font-size:14px}
-.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card)}
-table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
-th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-thead th{font-weight:600;color:var(--muted)}
-tbody tr:last-child td{border-bottom:0}
-td.ours{font-weight:600;color:var(--accent)}
-pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto;font-size:13px;line-height:1.5}
-a{color:var(--accent)}
-a.btn{color:var(--bg)}
-footer{color:var(--muted);font-size:13px;text-align:center;margin-top:60px}
-@media (max-width:640px){.grid{grid-template-columns:1fr}main{padding:36px 16px 60px}}
+:root{--fg:#222;--muted:#666;--line:#e5e5e5;--link:#2160a8;--bg:#fff}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 "Noto Sans",Helvetica,Arial,sans-serif}
+main{max-width:880px;margin:0 auto;padding:48px 16px 64px}
+h1{font:600 clamp(26px,4vw,38px)/1.25 "Noto Serif",Georgia,serif;text-align:center;margin:0 0 18px}
+h2{font:600 24px/1.3 "Noto Serif",Georgia,serif;text-align:center;margin:48px 0 16px}
+.authors{text-align:center;font-size:18px}
+.authors a{color:var(--link);text-decoration:none}
+.affil{text-align:center;color:var(--muted);font-size:15px;margin-top:4px}
+.links{text-align:center;margin:22px 0 30px}
+.links a,.links span{display:inline-block;margin:4px;padding:7px 18px;border-radius:20px;background:#363636;color:#fff;text-decoration:none;font-size:15px}
+.links span{background:#9a9a9a}
+img{width:100%;height:auto;display:block}
+.cap{color:var(--muted);font-size:15px;margin:10px 0 0}
+p{margin:0 0 14px;text-align:justify}
+.eq{overflow-x:auto;margin:4px 0 14px}
+pre{background:#f5f5f5;padding:16px;overflow-x:auto;font-size:14px;line-height:1.45;border-radius:4px}
+a{color:var(--link)}
+footer{color:var(--muted);font-size:13px;text-align:center;margin-top:48px}
+@media (max-width:600px){body{font-size:16px}p{text-align:left}}
 </style>
 </head>
 <body>
 <main>
-<h1><span class="name">EvoDur</span>: One model for every stage of the response</h1>
-<p class="sub">Bayesian updating of traffic incident duration forecasts</p>
-<div class="authors">Xiaoyang Cao<sup>1</sup>, Zhiyong Liu<sup>2</sup>, Ruimin Li<sup>3</sup></div>
+
+<h1>One model for every stage of the response:<br>Bayesian updating of traffic incident duration forecasts</h1>
+<div class="authors">Xiaoyang Cao<sup>1</sup>, &nbsp;Zhiyong Liu<sup>2</sup>, &nbsp;Ruimin Li<sup>3</sup></div>
 <div class="affil"><sup>1</sup>Massachusetts Institute of Technology &nbsp; <sup>2</sup>Beijing Jiaotong University &nbsp; <sup>3</sup>Tsinghua University</div>
 
 <div class="links">
-  <a class="btn off" href="#" title="Coming soon">Paper (coming soon)</a>
-  <a class="btn" href="https://github.com/XiaoyangCao1113/EvoDur">Code</a>
-  <a class="btn" href="#data">Data</a>
-  <a class="btn" href="#citation">BibTeX</a>
+  <span title="Coming soon">Paper</span>
+  <a href="https://github.com/XiaoyangCao1113/EvoDur">Code</a>
+  <a href="#bibtex">BibTeX</a>
 </div>
 
-<figure>
-  <img src="assets/teaser.png" alt="The forecast for one incident sharpening as the police arrive, the label is recorded and time passes">
-  <figcaption>The forecast for one incident (schematic). Left: the forecast density issued at the call, when the police arrive, when the label is recorded and at 45 min; the band is the 80% prediction interval, and durations that have already passed are ruled out. Right: the forecast at 45 min is the forecast at the call multiplied by one factor per piece of information and renormalized. Each factor is fitted once on all incidents, so nothing is refitted.</figcaption>
-</figure>
-
-<div class="tldr"><b>In short.</b> A traffic management center needs a duration forecast when an incident is reported, and a sharper one as the police arrive, the officer reports how the incident is handled (the <i>label</i>) and time passes. Most models are refitted for each stage, so the models for late stages learn from the few incidents that last that long. EvoDur keeps one call-time forecast and updates it by Bayes' rule with one small likelihood per piece of evidence. It is fitted once on all incidents and serves every stage.</div>
-
-<h2>Why EvoDur</h2>
-<div class="why">
-  <div class="card"><div class="k">One model for every stage</div>
-  <p>A call-time forecast and one module each for the police arrival time, the label and the elapsed time. Any combination of information is handled without refitting, and an update takes 1&ndash;3&nbsp;ms on one CPU core.</p></div>
-  <div class="card"><div class="k">Better than refitting</div>
-  <p>After police arrival, EvoDur scores higher than models refitted for that stage in every fold on all four datasets with arrival times. The longer an incident stays open, the larger the gain, because a refitted model sees fewer incidents.</p></div>
-  <div class="card"><div class="k">Intervals you can act on</div>
-  <p>With the arrival time and the label, the 80% interval has a 5&ndash;14% lower interval score than stage-wise linear and gradient-boosted models, and it still covers 79&ndash;80% of incidents.</p></div>
-</div>
-
-<div class="grid">
-  <div class="stat"><b>6 datasets</b><span>Beijing (two), NY/NJ/CT 511, Sydney, Seattle and San Francisco; 632,000 incidents in total</span></div>
-  <div class="stat"><b>11&ndash;37%</b><span>lower error of the predicted median once the arrival time and the label are known, compared with the forecast at the call</span></div>
-  <div class="stat"><b>10&ndash;39%</b><span>lower ranked probability score of the incident class forecast (minor, intermediate, major) from the call to arrival and label</span></div>
-</div>
+<img src="assets/teaser.png" alt="The forecast for one incident as the police arrive, the label is recorded and time passes">
+<p class="cap">The forecast for one incident is updated as the police arrive, the officer reports how the incident is handled (the label), and the incident stays open. Each update multiplies the forecast at the call by one factor per piece of information.</p>
 
 <h2>Abstract</h2>
 <p>Traffic management centers decide on diversions, message signs, tow trucks and police units while an incident is still open, so they need a duration forecast that is revised as information arrives. Most existing models are refitted for each stage of the response, and the models for late stages learn from the few incidents that reach them. We propose EvoDur, one model for every stage. A neural network forecasts the distribution of the duration at the call. The police arrival time, the response label that records how the incident is handled, and the time the incident has stayed open each enter through their own likelihood given the duration, and Bayes' rule combines whatever is known. On six datasets from three countries, EvoDur is as accurate as the best of ten baselines at the call. After police arrival it is more accurate than models refitted for that stage and than a single network with the later information as optional inputs, and the longer an incident stays open, the more it gains over models refitted on the incidents still open. With the arrival time and the label, its 80% prediction intervals have a 5&ndash;14% lower interval score than those of stage-wise linear and gradient-boosted models and keep their nominal coverage. Relative to the call, the arrival time and the label reduce the error of the predicted median by 11&ndash;37% on the four datasets that record arrivals, and the forecast of the incident class (minor, intermediate or major) improves at each stage.</p>
 
 <h2>Method</h2>
-<p>Let \(\boldsymbol{x}\) be what is known at the call (time, location, incident type and, where recorded, priority or vehicles), \(T\) the duration and \(C\) the label recorded during the response. Classical competing-risk models put the label first,</p>
-<div class="eq">\[ p(c, t \mid \boldsymbol{x}) = P(c \mid \boldsymbol{x})\, f(t \mid c, \boldsymbol{x}), \]</div>
-<p>so the forecast at the call is a mixture over labels that are not yet known. EvoDur puts the duration first,</p>
-<div class="eq">\[ p(c, t \mid \boldsymbol{x}) = f(t \mid \boldsymbol{x})\, P(c \mid t, \boldsymbol{x}). \]</div>
-<p>The label then becomes evidence about the duration, and every later piece of evidence \(e_j\) with a likelihood given the duration enters the same way:</p>
-<div class="eq">\[ f(t \mid \boldsymbol{x}, e_1, \dots, e_m) \;\propto\; f(t \mid \boldsymbol{x}) \prod_{j=1}^{m} p(e_j \mid t, \boldsymbol{x}). \]</div>
-<p>The call-time forecast \(f(t \mid \boldsymbol{x})\) is a neural mixture of log-logistic distributions. The modules are a classifier of the label given the duration, a model of the police arrival time \(r\) as a fraction of the duration (so \(r < t\) holds by construction), and the indicator \(\mathbb{1}\{t > s\}\) for an incident still open at time \(s\). Labels that indicate a larger response become more likely as the duration grows, so the label carries information about the duration:</p>
-<figure>
-  <img src="assets/label_curves.png" alt="Probability of each label class given the duration in six datasets">
-  <figcaption>Probability of each label class given the duration, from EvoDur's label module (held-out incidents). At each duration the bands sum to 1.</figcaption>
-</figure>
+<p>EvoDur forecasts the duration \(T\) at the call from what the operator knows, \(\boldsymbol{x}\). Every later piece of information \(e_j\) &ndash; the police arrival time, the label, or the fact that the incident is still open &ndash; has its own model of how likely it is for each duration, and the forecast is updated by Bayes' rule:</p>
+<div class="eq">\[ f(t \mid \boldsymbol{x}, e_1, \dots, e_m) \;\propto\; f(t \mid \boldsymbol{x}) \prod_{j} p(e_j \mid t, \boldsymbol{x}). \]</div>
+<p>Each part is fitted once on all incidents, so any combination of information can be used without refitting. Long incidents are more likely to end with a larger response, so the label is informative about the duration:</p>
+<img src="assets/label_curves.png" alt="Probability of each label class given the duration in six datasets">
+<p class="cap">Probability of each label class given the duration, from EvoDur's label module on held-out incidents.</p>
 
 <h2>Results</h2>
-<p><b>At the call, and after police arrival.</b> At the call EvoDur is as accurate as the best other model. After police arrival it is ahead of every model refitted for that stage.</p>
-<figure>
-  <img src="assets/summary.png" alt="EvoDur compared with its strongest competitor at the call, with the label known and after police arrival">
-  <figcaption>Difference in held-out log score per incident between EvoDur and its strongest competitor (positive means EvoDur is better), with 95% confidence intervals over cross-validation folds. (a) At the call. (b) With the label known, against the best competing-risk model. (c) After police arrival, against stage-wise models fitted for that stage.</figcaption>
-</figure>
+<img src="assets/summary.png" alt="EvoDur compared with its strongest competitor in three information states">
+<p class="cap">Log score of EvoDur minus that of its strongest competitor, with 95% confidence intervals over folds. (a) At the call. (b) With the label known. (c) After police arrival, against models refitted for that stage.</p>
 
-<p style="margin-top:28px"><b>The gain over refitting grows the longer an incident stays open.</b> A model refitted for a late stage learns only from the incidents that are still open, and these become few. EvoDur keeps the call-time forecast learned from all incidents.</p>
-<p class="tnote">Log score of EvoDur minus that of a neural network refitted on the incidents still open, with the label known (&times;10<sup>&minus;3</sup> per incident; positive means EvoDur is better), and the number of folds won out of five. A dash marks fewer than 100 test incidents per fold.</p>
-<div class="tablewrap">
-<table>
-<thead><tr><th>State</th><th>Beijing 4th Ring</th><th>Beijing citywide</th><th>NY/NJ/CT 511</th><th>Sydney</th><th>Seattle</th><th>San Francisco</th></tr></thead>
-<tbody>
-<tr><td>Label known</td><td>&minus;11 (0/5)</td><td>&minus;3 (1/5)</td><td>0 (3/5)</td><td>&minus;5 (0/5)</td><td>&minus;2 (2/5)</td><td class="ours">+6 (5/5)</td></tr>
-<tr><td>Open 10 min</td><td>+1 (2/5)</td><td>&minus;2 (1/5)</td><td>+1 (3/5)</td><td>&minus;2 (2/5)</td><td>&minus;3 (2/5)</td><td class="ours">+4 (5/5)</td></tr>
-<tr><td>Open 30 min</td><td>0 (2/5)</td><td>+4 (4/5)</td><td class="ours">+5 (5/5)</td><td>+5 (4/5)</td><td>0 (3/5)</td><td class="ours">+4 (5/5)</td></tr>
-<tr><td>Open 60 min</td><td>+16 (3/5)</td><td class="ours">+18 (5/5)</td><td class="ours">+28 (5/5)</td><td>+4 (3/5)</td><td class="ours">+10 (5/5)</td><td class="ours">+7 (5/5)</td></tr>
-<tr><td>Open 90 min</td><td>&ndash;</td><td>+25 (3/5)</td><td class="ours">+36 (5/5)</td><td>+5 (3/5)</td><td class="ours">+16 (5/5)</td><td class="ours">+8 (5/5)</td></tr>
-<tr><td>Open 120 min</td><td>&ndash;</td><td>0 (4/5)</td><td class="ours">+88 (5/5)</td><td>&minus;4 (2/5)</td><td class="ours">+20 (5/5)</td><td class="ours">+9 (5/5)</td></tr>
-</tbody>
-</table>
-</div>
+<img src="assets/value.png" alt="Economic value of acting on EvoDur's probability of a major incident" style="max-width:720px;margin:36px auto 0">
+<p class="cap">Value of acting on EvoDur's probability that an incident lasts more than 2 h, at the call, after police arrival and after the label, in Seattle and San Francisco.</p>
 
-<p style="margin-top:28px"><b>What moves the forecast.</b> Because each piece of information has its own module, its effect can be read off. A severe NY/NJ/CT event multiplies the median duration by 2.6; in Seattle, an officer reporting that only assistance was given cuts the chance of an incident longer than 2 h from 50% to 26%.</p>
-<figure>
-  <img src="assets/effects.png" alt="Effects of call-time attributes and response labels on the forecast median">
-  <figcaption>(a) Ratio of the predicted median duration with and without a call-time attribute, for EvoDur (dots) and a linear AFT model (open circles). (b) Ratio of the predicted median after and before the label is known. These are associations learned from the records, not causal effects.</figcaption>
-</figure>
-
-<p style="margin-top:28px"><b>Value for decisions.</b> For a decision that pays off only for major incidents (over 2 h), such as signing a long diversion, acting on EvoDur's probability of a major incident saves more at each stage of the response.</p>
-<figure>
-  <img src="assets/value.png" alt="Relative economic value of acting on EvoDur's probability of a major incident" style="max-width:720px;margin:0 auto">
-  <figcaption>Relative economic value at the call, after police arrival and after arrival and label, against the ratio of the cost of acting to the loss avoided. 0 is no saving over always or never acting; 1 is the saving of perfect knowledge.</figcaption>
-</figure>
-
-<h2 id="data">Data</h2>
-<p>Four datasets are public: the <a href="https://data.ny.gov/">511NY event feed</a> (NY/NJ/CT, 2010&ndash;2015), the Sydney road traffic incident data (Mendeley Data), and the police dispatch records of <a href="https://data.seattle.gov/">Seattle</a> and <a href="https://data.sf.gov/">San Francisco</a>. The <a href="https://github.com/XiaoyangCao1113/EvoDur">code</a> downloads them, checks them against the snapshot used in the paper, and regenerates every table and figure. The Beijing data (2008) are available from the corresponding author on reasonable request; they are not public because of privacy restrictions of the Beijing Municipal Traffic Management Bureau.</p>
-
-<h2 id="citation">Citation</h2>
+<h2 id="bibtex">BibTeX</h2>
 <pre>@article{cao2026evodur,
   title   = {One model for every stage of the response: Bayesian updating of
              traffic incident duration forecasts},
@@ -162,7 +76,7 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:60px}
   year    = {2026}
 }</pre>
 
-<footer>Icons in the teaser figure are from Material Design Icons (Apache License 2.0).</footer>
+<footer>Icons in the teaser are from Material Design Icons (Apache License 2.0).</footer>
 </main>
 </body>
 </html>
