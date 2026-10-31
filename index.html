@@ -30,6 +30,27 @@ p{margin:0 0 14px;text-align:justify}
 .eq{overflow-x:auto;margin:4px 0 14px}
 pre{background:#f5f5f5;padding:16px;overflow-x:auto;font-size:14px;line-height:1.45;border-radius:4px}
 a{color:var(--link)}
+h3{font:600 19px/1.35 "Noto Serif",Georgia,serif;margin:36px 0 10px}
+nav{text-align:center;font-size:15px;margin:-10px 0 34px;color:var(--muted)}
+nav a{color:var(--muted);text-decoration:none;margin:0 10px}
+nav a:hover{color:var(--link)}
+.tw{overflow-x:auto;margin:6px 0 4px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 9px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead tr{border-top:1.5px solid var(--fg);border-bottom:1px solid var(--fg)}
+tbody tr:last-child{border-bottom:1.5px solid var(--fg)}
+th{font-weight:600}
+td.g{font-weight:600}
+thead tr.sub{border-top:none}
+thead th[colspan]{text-align:center;border-bottom:1px solid var(--line)}
+thead tr.sub th{font-weight:400;color:var(--muted);font-size:13.5px}
+table.mins thead tr:first-child{border-bottom:none}
+table.mins td,table.mins th{text-align:center}
+table.mins td:first-child,table.mins th:first-child{text-align:left}
+tr.grp td{font-style:italic;color:var(--muted);text-align:left;padding-top:10px}
+table.data td,table.data th{white-space:normal;text-align:left}
+table.data td.n{text-align:right;white-space:nowrap}
 footer{color:var(--muted);font-size:13px;text-align:center;margin-top:48px}
 @media (max-width:600px){body{font-size:16px}p{text-align:left}}
 </style>
@@ -47,25 +68,86 @@ footer{color:var(--muted);font-size:13px;text-align:center;margin-top:48px}
   <a href="#bibtex">BibTeX</a>
 </div>
 
+<nav><a href="#method">Method</a><a href="#results">Results</a><a href="#data">Data</a><a href="#bibtex">BibTeX</a></nav>
+
 <img src="assets/teaser_2026b.png" alt="The forecast for one incident as the police arrive, the label is recorded and time passes">
 <p class="cap">The forecast for one incident is updated as the police arrive, the officer reports how the incident is handled (the label), and the incident stays open. Each update multiplies the forecast at the call by one factor per piece of information.</p>
 
 <h2>Abstract</h2>
 <p>Traffic management centers decide on diversions, message signs, tow trucks and police units while an incident is still open, so they need a duration forecast that is revised as information arrives. Most existing models are refitted for each stage of the response, and the models for late stages learn from the few incidents that reach them. We propose EvoDur, one model for every stage. A neural network forecasts the distribution of the duration at the call. The police arrival time, the response label that records how the incident is handled, and the time the incident has stayed open each enter through their own likelihood given the duration, and Bayes' rule combines whatever is known. On six datasets from three countries, EvoDur is as accurate as the best of ten baselines at the call. After police arrival it is more accurate than models refitted for that stage and than a single network with the later information as optional inputs, and the longer an incident stays open, the more it gains over models refitted on the incidents still open. With the arrival time and the label, its 80% prediction intervals have a 5&ndash;14% lower interval score than those of stage-wise linear and gradient-boosted models and keep their nominal coverage. Relative to the call, the arrival time and the label reduce the error of the predicted median by 11&ndash;37% on the four datasets that record arrivals, and the forecast of the incident class (minor, intermediate or major) improves at each stage.</p>
 
-<h2>Method</h2>
-<p>EvoDur forecasts the duration \(T\) at the call from what the operator knows, \(\boldsymbol{x}\). Every later piece of information \(e_j\) &ndash; the police arrival time, the label, or the fact that the incident is still open &ndash; has its own model of how likely it is for each duration, and the forecast is updated by Bayes' rule:</p>
+<h2 id="method">Method</h2>
+<p>Let \(\boldsymbol{x}\) be what is known at the call (time, location, incident type and, where recorded, priority), \(T\) the duration and \(C\) the response label, such as the clearance method or the disposition of a police call. Competing-risk models, the usual joint model of duration and label, put the label first:</p>
+<div class="eq">\[ p(c, t \mid \boldsymbol{x}) = P(c \mid \boldsymbol{x})\, f(t \mid c, \boldsymbol{x}). \]</div>
+<p>Their forecast at the call is then a mixture over labels that are not yet known. EvoDur factorizes the same joint distribution the other way round, with the duration first:</p>
+<div class="eq">\[ p(c, t \mid \boldsymbol{x}) = f(t \mid \boldsymbol{x})\, P(c \mid t, \boldsymbol{x}). \]</div>
+<p>The label is now evidence about the duration, and every later piece of information \(e_j\) that has a likelihood given the duration enters the same way:</p>
 <div class="eq">\[ f(t \mid \boldsymbol{x}, e_1, \dots, e_m) \;\propto\; f(t \mid \boldsymbol{x}) \prod_{j} p(e_j \mid t, \boldsymbol{x}). \]</div>
-<p>Each part is fitted once on all incidents, so any combination of information can be used without refitting. Long incidents are more likely to end with a larger response, so the label is informative about the duration:</p>
+<p>The forecast at the call \(f(t \mid \boldsymbol{x})\) is a neural mixture of log-logistic distributions. There are three evidence modules: a classifier of the label given the duration; a model of the police arrival time as a fraction of the duration, so the police always arrive before the incident ends; and the indicator that the incident is still open at time \(s\). Each is fitted once on all incidents, so any combination of information is handled without refitting, and an update takes 1&ndash;3&nbsp;ms on one CPU core.</p>
+<p>The label carries information because long incidents tend to end with a larger response:</p>
 <img src="assets/label_curves_2026b.png" alt="Probability of each label class given the duration in six datasets">
-<p class="cap">Probability of each label class given the duration, from EvoDur's label module on held-out incidents.</p>
+<p class="cap">Probability of each label class given the duration, from EvoDur's label module on held-out incidents. At each duration the bands sum to 1; the gray histogram under each panel shows the distribution of durations.</p>
 
-<h2>Results</h2>
+<h2 id="results">Results</h2>
+<p>We compare EvoDur with ten baselines, from linear accelerated failure time (AFT) and XGBoost-AFT models to DeepHit, Neural Fine-Gray and neural competing-risk mixtures, by the held-out log score with five-fold cross-validation. Competing-risk models use the label directly; stage-wise models are refitted for each stage on the incidents and information available at that stage.</p>
+
+<h3>Accuracy at the call and after the police arrive</h3>
 <img src="assets/summary_2026b.png" alt="EvoDur compared with its strongest competitor in three information states">
-<p class="cap">Log score of EvoDur minus that of its strongest competitor, with 95% confidence intervals over folds. (a) At the call. (b) With the label known. (c) After police arrival, against models refitted for that stage.</p>
+<p class="cap">Log score of EvoDur minus that of its strongest competitor (positive means EvoDur is better), with 95% confidence intervals over folds. (a) At the call, against the best other model. (b) With the label known, against the best competing-risk model. (c) After police arrival, against models fitted for that stage. n/a: the dataset does not record arrival times.</p>
 
-<img src="assets/value_2026b.png" alt="Economic value of acting on EvoDur's probability of a major incident" style="max-width:720px;margin:36px auto 0">
-<p class="cap">Value of acting on EvoDur's probability that an incident lasts more than 2 h, at the call, after police arrival and after the label, in Seattle and San Francisco.</p>
+<h3>The margin grows as information accumulates</h3>
+<img src="assets/gain_2026b.png" alt="EvoDur's margin over the best other model in each information state">
+<p class="cap">Log score of EvoDur minus that of the best other model in each information state. At 30, 60 and 120 min the label is known and the incident is still open. Each panel shows one dataset in blue and the other five in gray. On the 4th Ring data few test incidents are still open at 120 min, so that point (open circle) is imprecise.</p>
+
+<h3>Updating versus refitting</h3>
+<p>A model refitted for a late stage learns only from the incidents still open at that time, and these become few. EvoDur keeps the forecast at the call, learned from all incidents, and only updates it.</p>
+<div class="tw"><table>
+<thead><tr><th>Label known and</th><th>Beijing 4th Ring</th><th>Beijing citywide</th><th>NY/NJ/CT 511</th><th>Sydney</th><th>Seattle</th><th>San Francisco</th></tr></thead>
+<tbody>
+<tr><td>at the call</td><td>&minus;11 (0/5)</td><td>&minus;3 (1/5)</td><td>0 (3/5)</td><td>&minus;5 (0/5)</td><td>&minus;2 (2/5)</td><td class="g">+6 (5/5)</td></tr>
+<tr><td>open at 10 min</td><td>+1 (2/5)</td><td>&minus;2 (1/5)</td><td>+1 (3/5)</td><td>&minus;2 (2/5)</td><td>&minus;3 (2/5)</td><td class="g">+4 (5/5)</td></tr>
+<tr><td>open at 30 min</td><td>0 (2/5)</td><td>+4 (4/5)</td><td class="g">+5 (5/5)</td><td>+5 (4/5)</td><td>0 (3/5)</td><td class="g">+4 (5/5)</td></tr>
+<tr><td>open at 60 min</td><td>+16 (3/5)</td><td class="g">+18 (5/5)</td><td class="g">+28 (5/5)</td><td>+4 (3/5)</td><td class="g">+10 (5/5)</td><td class="g">+7 (5/5)</td></tr>
+<tr><td>open at 90 min</td><td>&ndash;</td><td>+25 (3/5)</td><td class="g">+36 (5/5)</td><td>+5 (3/5)</td><td class="g">+16 (5/5)</td><td class="g">+8 (5/5)</td></tr>
+<tr><td>open at 120 min</td><td>&ndash;</td><td>0 (4/5)</td><td class="g">+88 (5/5)</td><td>&minus;4 (2/5)</td><td class="g">+20 (5/5)</td><td class="g">+9 (5/5)</td></tr>
+</tbody></table></div>
+<p class="cap">Log score of EvoDur minus that of a neural network refitted on the incidents still open (&times;10<sup>&minus;3</sup> per incident; positive means EvoDur is better) and the number of folds, out of five, in which EvoDur is better. Bold: better in all five folds. &ndash;: fewer than 100 test incidents per fold.</p>
+
+<h3>Forecasts in minutes</h3>
+<p>On the four datasets that record the police arrival, the arrival time and the label shorten the 80% prediction interval and the error of the predicted median, while the interval keeps covering about 80% of incidents.</p>
+<div class="tw"><table class="mins">
+<thead><tr><th rowspan="2">Dataset</th><th colspan="2">Error of the median (min)</th><th colspan="2">Width of 80% interval (min)</th><th colspan="2">Coverage of 80% interval</th></tr>
+<tr class="sub"><th>Call</th><th>Arrival, label</th><th>Call</th><th>Arrival, label</th><th>Call</th><th>Arrival, label</th></tr></thead>
+<tbody>
+<tr><td>Beijing 4th Ring</td><td>17.7</td><td class="g">15.3</td><td>46</td><td class="g">39</td><td>79%</td><td>79%</td></tr>
+<tr><td>Beijing citywide</td><td>18.8</td><td class="g">16.8</td><td>48</td><td class="g">42</td><td>79%</td><td>79%</td></tr>
+<tr><td>Seattle</td><td>78.3</td><td class="g">49.6</td><td>232</td><td class="g">141</td><td>81%</td><td>80%</td></tr>
+<tr><td>San Francisco</td><td>74.0</td><td class="g">57.9</td><td>218</td><td class="g">181</td><td>81%</td><td>79%</td></tr>
+</tbody></table></div>
+<p class="cap">Mean absolute error of EvoDur's predicted median, and the mean width and coverage of its 80% prediction interval, on held-out incidents.</p>
+
+<h3>Effects of call-time attributes and labels</h3>
+<p>Because each piece of information enters through its own module, its effect on the forecast can be read off directly. A severe NY/NJ/CT event (closure, overturn or fire) multiplies the predicted median by about 2.6, while a San Francisco call closed as canceled or without merit has its predicted median cut by more than half. For call-time attributes, EvoDur agrees in direction with a linear AFT model.</p>
+<img src="assets/effects_2026b.png" alt="Effects of call-time attributes and response labels on the predicted median duration">
+<p class="cap">(a) Ratio of the average predicted median duration with and without a call-time attribute, for EvoDur (dots, with the range over folds) and the linear AFT model (open circles). (b) Ratio of the average predicted median after and before the label is known. These are associations learned from the records, not causal effects.</p>
+
+<h3>Value for decisions</h3>
+<p>For a decision that pays off only if an incident lasts more than 2 h, such as signing a long diversion, acting on EvoDur's probability of such an incident saves more at each stage of the response.</p>
+<img src="assets/value_2026b.png" alt="Economic value of acting on EvoDur's probability of a major incident" style="max-width:720px;margin:0 auto">
+<p class="cap">Relative economic value against the ratio of the cost of acting to the loss it avoids: 0 is no better than always or never acting, 1 is the value of knowing the duration in advance.</p>
+
+<h2 id="data">Data</h2>
+<div class="tw"><table class="data">
+<thead><tr><th>Dataset</th><th>Period</th><th class="n">Incidents</th><th class="n">Median (min)</th><th>Label</th><th>Arrival time</th><th>Access</th></tr></thead>
+<tbody>
+<tr><td>Beijing 4th Ring</td><td>2008</td><td class="n">5,388</td><td class="n">21.5</td><td>Clearance method</td><td>Yes</td><td>On request</td></tr>
+<tr><td>Beijing citywide</td><td>2008</td><td class="n">40,120</td><td class="n">28.3</td><td>Clearance method</td><td>Yes</td><td>On request</td></tr>
+<tr><td>NY/NJ/CT 511</td><td>2010&ndash;2015</td><td class="n">206,009</td><td class="n">43.0</td><td>Event type</td><td>No</td><td><a href="https://data.ny.gov/d/ah74-pg4w">data.ny.gov</a></td></tr>
+<tr><td>Sydney</td><td>2017&ndash;2022</td><td class="n">38,607</td><td class="n">33.3</td><td>Attending agencies</td><td>No</td><td><a href="https://data.mendeley.com/datasets/cgnx2cs665">Mendeley Data</a></td></tr>
+<tr><td>Seattle</td><td>2010&ndash;2026</td><td class="n">253,758</td><td class="n">126.7</td><td>Clearance description</td><td>Yes</td><td><a href="https://data.seattle.gov/d/33kz-ixgy">data.seattle.gov</a></td></tr>
+<tr><td>San Francisco</td><td>2015&ndash;2026</td><td class="n">88,186</td><td class="n">63.5</td><td>Disposition</td><td>Yes</td><td><a href="https://data.sf.gov/d/2zdj-bwza">data.sf.gov</a></td></tr>
+</tbody></table></div>
+<p class="cap">The <a href="https://github.com/XiaoyangCao1113/EvoDur">code</a> downloads the four public datasets, checks them against the snapshot used in the paper and regenerates every table and figure. The Beijing data are available from the corresponding author on reasonable request.</p>
 
 <h2 id="bibtex">BibTeX</h2>
 <pre>@article{cao2026evodur,
